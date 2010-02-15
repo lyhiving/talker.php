@@ -122,7 +122,6 @@ class Talker {
 			
 			if($this->socket->eof()) {
 				$this->connected = false;
-				echo "Server disconnected\n";
 				return false;
 			}
 			
