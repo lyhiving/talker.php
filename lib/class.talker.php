@@ -74,7 +74,7 @@ class Talker {
 		
 		$message = array("type" => "message", "content" => $message);
 		if(PEAR::isError($result = $this->send($message))) {
-			throw new Exception("Unable to send message: " . $result["message"]);
+			throw new Exception("Unable to send message: " . $result->getMessage());
 			return false;
 		}
 		return true;
@@ -86,17 +86,20 @@ class Talker {
 		
 		$message = array("type" => "message", "content" => $message, "to" => $this->users[$user_name]['id']);
 		if(PEAR::isError($result = $this->send($message))) {
-			throw new Exception("Unable to send message: " . $result["message"]);
+			throw new Exception("Unable to send message: " . $result->getMessage());
 			return false;
 		}
 		return true;
 	}
 	
 	public function close() {
+		$this->listening = false;
+		$this->connected = false;
 		$this->socket->disconnect();
 	}
 	
 	public function leave() {
+		$this->listening = false;
 		$this->send(array("type" => "close"));
 		$this->close();
 	}
@@ -114,9 +117,10 @@ class Talker {
 		$listener->setTalker($this);
 		
 		$this->listener = $listener;
+		$this->listening = true;
 		$this->socket->setTimeout($this->timeout, 0);
 		
-		while($this->connected) {
+		while($this->connected && $this->listening) {
 			$this->socket->setBlocking(false);
 			$result = json_decode($this->socket->readLine(), true);
 			
@@ -125,7 +129,7 @@ class Talker {
 				return false;
 			}
 			
-			if(is_array($result)) $this->incoming($result);
+			if(is_array($result) && $this->listening) $this->incoming($result);
 			
 			$this->ping();
 		}
@@ -149,8 +153,10 @@ class Talker {
 				else $this->listener->on_message($result['user'],$result['content']);
 				break;
 			case 'users':
-				foreach($results['users'] AS $user) {
-					$this->users[$user['name']] = $user['id'];
+				if(is_array($results['users'])) {
+					foreach($results['users'] AS $user) {
+						$this->users[$user['name']] = $user['id'];
+					}
 				}
 				@$this->listener->on_presence($result['users']);
 				break;
