@@ -1,10 +1,6 @@
 # Talker PHP Client
 A real-time [Talker](http://talkerapp.com) PHP client. Wraps the [Talker protocol](https://talker.tenderapp.com/faqs/api/talker-protocol) and provides methods both to talk, and to listen in on a room with event callbacks.
 
-# Requirements
-
-The PEAR [Net_Socket](http://pear.php.net/net_socket) package is used for socket communication. Make sure you have PEAR installed, available in your include_path, and that the Net_Socket package is also installed.
-
 # For simple talking
 
 1) Get a Talker account at https://talkerapp.com/signup
