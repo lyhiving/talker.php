@@ -2,13 +2,13 @@
 /*
  * This is a real-time PHP client for the Talker group chat application (talkerapp.com).
  * 
- * Make sure you have PEAR installed (http://pear.php.net), in your include_path, and that
- * the Net_Socket package is installed (http://pear.php.net/net_socket).
+ * Uses the standalone NetSocket class, which is taken and modified from PEAR's
+ * Net_Socket package.
  *
  * @package Talker.php
  * @author Joseph Szobody <jszobody@gmail.com>
  */
-require_once("Net/Socket.php");
+require_once("NetSocket.php");
 
 class Talker {
 	private $socket;
@@ -19,11 +19,11 @@ class Talker {
 	private $timeout = 10;
 	
 	private $connected = false;
-	private $user;
-	private $users = array();
+	public $user;
+	public $users = array();
 	
 	function __construct() {
-		$this->socket = new Net_Socket();
+		$this->socket = new NetSocket();
 	}
 	
 	public function connect($room = "Main", $token) {
@@ -33,9 +33,10 @@ class Talker {
 		}
 		
 		// Connect to server
-		if(PEAR::isError($this->socket->connect($this->host, $this->port, false, $this->timeout))) {
+		try {
+			$this->socket->connect($this->host, $this->port, false, $this->timeout);
+		} catch(Exception $e) {
 			Throw new Exception("Unable to connect");
-			return false;
 		}
 		
 		$this->socket->enableCrypto(true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
@@ -43,9 +44,10 @@ class Talker {
 		
 		// Authenticate
 		$auth = array("type" => "connect", "room" => $room, "token" => $token);
-		if(PEAR::isError($this->send($auth))) {
+		try {
+			$this->send($auth);
+		} catch(Exception $e) {
 			throw new Exception("Unable to send authentication request");
-			return false;
 		}
 		
 		$result = json_decode($this->socket->readLine(), true);
@@ -73,9 +75,10 @@ class Talker {
 		if(!$this->connected) throw new Exception("Not connected");
 		
 		$message = array("type" => "message", "content" => $message);
-		if(PEAR::isError($result = $this->send($message))) {
-			throw new Exception("Unable to send message: " . $result->getMessage());
-			return false;
+		try {
+			$result = $this->send($message);
+		} catch(Exception $e) {
+			throw new Exception("Unable to send message: " . $e->getMessage());
 		}
 		return true;
 	}
@@ -85,9 +88,10 @@ class Talker {
 		if(!$this->users[$user_name]) throw new Exception("Invalid user");
 		
 		$message = array("type" => "message", "content" => $message, "to" => $this->users[$user_name]['id']);
-		if(PEAR::isError($result = $this->send($message))) {
-			throw new Exception("Unable to send message: " . $result->getMessage());
-			return false;
+		try {
+			$result = $this->send($message);
+		} catch(Exception $e) { 
+			throw new Exception("Unable to send message: " . $e->getMessage());
 		}
 		return true;
 	}
